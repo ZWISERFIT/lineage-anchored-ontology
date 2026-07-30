@@ -12,7 +12,9 @@ class TaskClassifier:
 
     TIERS = {
         "ultra_light": [
+            "心跳检查",
             "心跳回复",
+            "心跳",
             "状态检查",
             "数据汇总",
             "格式转换",

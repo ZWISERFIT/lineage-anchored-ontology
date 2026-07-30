@@ -31,7 +31,31 @@
       "tokens_out": 50,
       "cost_usd": 0.001,
       "timestamp": "2026-07-30T12:13:45.260743"
+    },
+    {
+      "task": "test",
+      "model": "deepseek-flash",
+      "tokens_in": 100,
+      "tokens_out": 50,
+      "cost_usd": 0.001,
+      "timestamp": "2026-07-30T13:03:11.274730"
+    },
+    {
+      "task": "test",
+      "model": "deepseek-flash",
+      "tokens_in": 100,
+      "tokens_out": 50,
+      "cost_usd": 0.001,
+      "timestamp": "2026-07-30T17:12:14.339542"
+    },
+    {
+      "task": "test",
+      "model": "deepseek-flash",
+      "tokens_in": 100,
+      "tokens_out": 50,
+      "cost_usd": 0.001,
+      "timestamp": "2026-07-30T17:20:53.798571"
     }
   ],
-  "total_cost": 0.004
+  "total_cost": 0.007
 }

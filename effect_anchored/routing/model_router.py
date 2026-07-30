@@ -58,35 +58,35 @@ class ModelRouter:
         # ultra_light: 优先Qoder CN credit消费(免费)，降级DeepSeek
         "ultra_light": [
             {"model": "qwen-flash", "provider": "qoder-cn", "credit": True,  "cost": "$0.14/$0.28"},
-            {"model": "deepseek-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
         ],
         # light: Qoder CN qwen-plus(credit) → DeepSeek flash
         "light": [
             {"model": "qwen-plus", "provider": "qoder-cn", "credit": True,  "cost": "$0.40/$1.20"},
-            {"model": "deepseek-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
         ],
-        # medium: DeepSeek v4 primary, Qoder qwen-max为降级
+        # medium: DeepSeek v4-pro primary · Qoder qwen-max降级
         "medium": [
-            {"model": "deepseek-v4", "provider": "deepseek", "credit": False, "cost": "$1.10/$4.40"},
-            {"model": "qwen-max", "provider": "qoder-cn", "credit": True,  "cost": "$1.20/$4.80"},
+            {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
+            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
             {"model": "qwen-plus", "provider": "qoder-cn", "credit": True,  "cost": "$0.40/$1.20"},
         ],
         # heavy: DeepSeek v4-pro primary, Qoder qwen-max降级
         "heavy": [
             {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
-            {"model": "deepseek-v4", "provider": "deepseek", "credit": False, "cost": "$1.10/$4.40"},
+            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
             {"model": "qwen-max", "provider": "qoder-cn", "credit": True,  "cost": "$1.20/$4.80"},
         ],
-        # reasoning: 仅DeepSeek——Qoder无reasoner等价物
+        # reasoning: DeepSeek v4-pro primary（7/30升级后无reasoner模型，仅v4-pro/v4-flash）
         "reasoning": [
-            {"model": "deepseek-reasoner", "provider": "deepseek", "credit": False, "cost": "$0.55/$2.19"},
             {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
+            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
         ],
         # code: Qoder CN Kimi-Code primary(credit), DeepSeek flash降级
         "code": [
             {"model": "kimi-code", "provider": "qoder-cn", "credit": True,  "cost": "$0.50/$2.00"},
             {"model": "qwen-plus", "provider": "qoder-cn", "credit": True,  "cost": "$0.40/$1.20"},
-            {"model": "deepseek-v4", "provider": "deepseek", "credit": False, "cost": "$1.10/$4.40"},
+            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
         ],
     }
 

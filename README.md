@@ -1,6 +1,6 @@
 # Lineage-Anchored Ontology (LAO)
 
-> **AI认知层基础设施。从LLM的概率推理到LAO的确定性校验。每一个Agent的错误都自动变成代码，永远不再犯。**
+> **AI认知层基础设施。LLM把记忆变成概率。LAO把记忆变成谱系。**
 
 > `pip install lineage-anchored-ontology`
 
@@ -10,9 +10,9 @@
 
 LAO是位于任何LLM和其输出之间的**确定性校验层**。六个开源Python库。三行代码接入。
 
-LLM让AI知道世界。**LAO让AI知道你。**
+LLM已经有记忆——Prompt、Context、Graph、Loop都在做。但记忆是散点。LAO做的事：把散点变成谱系——每一个记忆点不是孤立存在，它有一个"从哪来→怎么变→影响什么"的血缘关系。
 
-聪明是通用的。懂你是专用的。
+**记忆是静态的。认知是动态的。**
 
 ---
 
@@ -150,6 +150,6 @@ ZWISERFIT本身是一家AI操作系统级公司——9套垂直Agent微型OS构�
 - **AI军团：** 9-Agent 24×7自主运行
 - **LAO起源：** 9-Agent在实战中遇到120天幻觉问题→提炼为通用确定性校验层
 
-**LLM让AI知道世界。LAO让AI知道你。**
+**LLM把记忆变成概率。LAO把记忆变成谱系。**
 
 https://github.com/ZWISERFIT

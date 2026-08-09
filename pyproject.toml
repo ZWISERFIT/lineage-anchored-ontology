@@ -40,5 +40,8 @@ dev = [
     "jsonschema>=4.0",
 ]
 
+[project.scripts]
+lao = "lao.cli:main"
+
 [tool.setuptools.packages.find]
-include = ["effect_anchored*"]
+include = ["effect_anchored*", "lao*"]

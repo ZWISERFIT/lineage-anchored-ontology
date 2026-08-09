@@ -50,6 +50,8 @@ __all__ = [
     "ExtractionInput",
     "ConstraintGenerator",
     "RuleRegistry",
+    "ExperienceAtomEngine",
+    "ExperienceAtom",
 ]
 from .hallucination_gate import HallucinationGate, HInterceptEvent, HResult, GateResult
 from .memory_anchor import MemoryAnchor, MResult
@@ -62,7 +64,7 @@ from .routing.model_router import ModelRouter, RouteSelection
 from .routing.cost_tracker import CostTracker
 
 # L3 Evolution
-from .evolution import ExperienceExtractor, ErrorPattern, ExtractionInput, ConstraintGenerator, RuleRegistry
+from .evolution import ExperienceExtractor, ErrorPattern, ExtractionInput, ConstraintGenerator, RuleRegistry, ExperienceAtomEngine, ExperienceAtom
 
 # L4 Interaction Layer
 from .interaction import InteractionGate, ConfirmationResult

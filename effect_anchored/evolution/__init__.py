@@ -21,8 +21,11 @@ __all__ = [
     "ExtractionInput",
     "ConstraintGenerator",
     "RuleRegistry",
+    "ExperienceAtomEngine",
+    "ExperienceAtom",
 ]
 
 from .experience_extractor import ExperienceExtractor, ErrorPattern, ExtractionInput
 from .constraint_generator import ConstraintGenerator
 from .rule_registry import RuleRegistry
+from .atom_engine import ExperienceAtomEngine, ExperienceAtom

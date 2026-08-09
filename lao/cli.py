@@ -116,6 +116,51 @@ def _cmd_demo(args) -> int:
     return 1
 
 
+def _cmd_atom(args) -> int:
+    from effect_anchored.evolution.atom_engine import ExperienceAtomEngine
+    base = args.dir or os.getcwd()
+    engine = ExperienceAtomEngine(os.path.join(base, "live", "experience-atoms.json"))
+
+    if args.event:
+        import json
+        try:
+            ev = json.loads(args.event)
+        except json.JSONDecodeError:
+            print("❌ --event must be a JSON object")
+            return 2
+        if "event_id" not in ev:
+            print("❌ event must include event_id")
+            return 2
+        atom = engine.ingest(ev)
+        print(f"✅ Experience Atom: {atom.atom_id}")
+        print(f"   pattern={atom.pattern[:40]} category={atom.category}")
+        print(f"   occurrences={atom.occurrences} status={atom.status} impact={atom.impact_score}")
+        if atom.anchor_id:
+            print(f"   anchor={atom.anchor_id} (Future Protection ENFORCED)")
+        return 0
+
+    if args.verify:
+        reports = engine.verify_future_protection()
+        if not reports:
+            print("No anchors yet to verify.")
+            return 0
+        print("Future Protection verification:")
+        for r in reports:
+            print(f"  ✅ {r['atom_id']} {r['pattern'][:35]} occurrences={r['occurrences']} "
+                  f"future_protection={r['future_protection']}")
+        return 0
+
+    stats = engine.stats()
+    print("Experience Atoms:")
+    print(f"  total={stats['total']} experience={stats['experience']} "
+          f"anchor_candidate={stats['anchor_candidate']} anchor={stats['anchor']}")
+    atoms = engine.load_atoms()
+    for a in atoms:
+        print(f"  {a.atom_id} [{a.category}] {a.pattern[:40]} occ={a.occurrences} "
+              f"status={a.status}{' ★'+a.anchor_id if a.anchor_id else ''}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="lao", description="LAO reliability plugin")
     sub = p.add_subparsers(dest="command", required=True)
@@ -146,6 +191,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     sd = sub.add_parser("demo", help="Run the 6-function demo")
     sd.set_defaults(func=_cmd_demo)
+
+    sa = sub.add_parser("atom", help="Experience Atom: Trust Event → Atom → Anchor → Future Protection")
+    sa.add_argument("--dir", default=None, help="target directory")
+    sa.add_argument("--event", default=None, help="record a Trust Event then convert to Atom (JSON string)")
+    sa.add_argument("--verify", action="store_true", help="verify Future Protection for anchors")
+    sa.set_defaults(func=_cmd_atom)
 
     return p
 

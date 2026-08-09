@@ -7,3 +7,6 @@ build/
 .venv/
 .pytest_cache/
 routing_cost_log.json
+.bak*
+*.bad
+.broken*

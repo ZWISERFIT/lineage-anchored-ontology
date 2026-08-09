@@ -51,6 +51,8 @@ __all__ = [
     "ConstraintGenerator",
     "RuleRegistry",
     "ExperienceAtomEngine",
+    "PreferenceFirewall",
+    "FirewallResult",
     "ExperienceAtom",
 ]
 from .hallucination_gate import HallucinationGate, HInterceptEvent, HResult, GateResult
@@ -65,6 +67,7 @@ from .routing.cost_tracker import CostTracker
 
 # L3 Evolution
 from .evolution import ExperienceExtractor, ErrorPattern, ExtractionInput, ConstraintGenerator, RuleRegistry, ExperienceAtomEngine, ExperienceAtom
+from .preference_firewall import PreferenceFirewall, FirewallResult, FirewallVerdict
 
 # L4 Interaction Layer
 from .interaction import InteractionGate, ConfirmationResult

@@ -161,6 +161,28 @@ def _cmd_atom(args) -> int:
     return 0
 
 
+def _cmd_firewall(args) -> int:
+    from effect_anchored.preference_firewall import PreferenceFirewall
+    fw = PreferenceFirewall()
+    if args.request:
+        r = fw.check(args.request)
+        print(f"Ver‏dict: {r.verdict.value.upper()}")
+        print(f"Allowed : {r.allowed}")
+        print(f"Reason  : {r.reason}")
+        if r.matched_dimension:
+            print(f"Dim     : {r.matched_dimension}")
+        if r.verdict.value == "block":
+            te = fw.block_to_trust_event(r, args.agent)
+            print(f"TrustEvent → E-{args.agent.upper()}-PF (blocked before damage)")
+        return 0
+    print("Preference Firewall — deterministic guard (Optimization ≠ Replacement)")
+    print("  ALLOW : efficiency (token/workflow/context)")
+    print("  BLOCK : value/identity/expression change")
+    print("  REVIEW: ambiguous")
+    print("\nTry:  lao firewall --request '<change description>'")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="lao", description="LAO reliability plugin")
     sub = p.add_subparsers(dest="command", required=True)
@@ -197,6 +219,11 @@ def build_parser() -> argparse.ArgumentParser:
     sa.add_argument("--event", default=None, help="record a Trust Event then convert to Atom (JSON string)")
     sa.add_argument("--verify", action="store_true", help="verify Future Protection for anchors")
     sa.set_defaults(func=_cmd_atom)
+
+    sf = sub.add_parser("firewall", help="Preference Firewall: efficiency OK, identity/value change NO")
+    sf.add_argument("--request", default=None, help="change request to evaluate (non-interactive)")
+    sf.add_argument("--agent", default="demo")
+    sf.set_defaults(func=_cmd_firewall)
 
     return p
 

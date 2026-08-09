@@ -20,6 +20,9 @@ class TaskClassifier:
             "格式转换",
             "hello",
             "ping",
+            "realtime",
+            "实时",
+            "heartbeat",
         ],
         "light": [
             "模板填充",
@@ -35,6 +38,17 @@ class TaskClassifier:
             "code", "function", "class", "implement",
             "refactor", "重构", "debug", "调试",
             "单元测试", "集成测试",
+        ],
+        # 2026-08-08 Shuyu裁定(Stella成本矩阵v0.2): cn_explain/cn_creative → Qwen（省2-4×·GLM截断浪费）
+        "cn_explain": [
+            "解释", "说明", "讲解", "科普", "介绍", "阐述",
+            "为什么", "怎么回事", "含义", "意思", "原理",
+            "explain", "explain_cn",
+        ],
+        "cn_creative": [
+            "文案", "写诗", "写故事", "故事", "创意", "宣传语", "口号",
+            "标题", "剧本", "写一篇文章", "作文", "小说",
+            "小红书", "朋友圈", "creative_cn", "cn_creative",
         ],
         "medium": [
             "行业调研",
@@ -73,7 +87,13 @@ class TaskClassifier:
         """
         task_lower = task.lower()
         # 先检查高优先级层级（更具体的匹配）
-        for tier in ["reasoning", "code"]:
+        # 2026-08-08 Shuyu裁定: cn_creative优先于code（"写一个故事"→创意类非代码）
+        for tier in ["reasoning", "cn_creative", "code"]:
+            for kw in self.TIERS[tier]:
+                if kw in task_lower:
+                    return tier
+        # 2026-08-08 Shuyu裁定: cn_explain 新增分类（code之后，避免"解释代码"被误分流）
+        for tier in ["cn_explain"]:
             for kw in self.TIERS[tier]:
                 if kw in task_lower:
                     return tier

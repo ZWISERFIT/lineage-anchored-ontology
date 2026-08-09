@@ -3,7 +3,7 @@ ModelRouter — 模型路由与降级链路 v2.0
 ====================================
 
 根据任务分类结果选择最优模型，并构建降级链路。
-v2.0: Qoder CN/Intl双站接入 + Credit-aware路由
+# v2.0: Qoder CN/Intl已禁用 (2026-08-09 创始人裁定) + Credit-aware路由
 """
 
 from dataclasses import dataclass
@@ -15,7 +15,7 @@ class RouteSelection:
 
     task: str
     model: str
-    provider: str  # "deepseek" | "qoder-cn" | "qoder-intl" | "qwen-dashscope"
+    provider: str  # "deepseek" | "qwen-dashscope" | "novarouteai"
     tier: str
     cost: str  # "$/M tokens"
     credit_based: bool  # True = 用套餐Credit，不走DeepSeek余额
@@ -36,7 +36,7 @@ class ModelRouter:
     - 深度推理/reasoning → DeepSeek reasoner, 无降级(Qoder无等价物)
     """
 
-    # Qoder CN 可用模型 (通过 openapi.qoder.com.cn)
+# Qoder 已禁用 (2026-08-09 创始人裁定)
     QODER_CN_MODELS = {
         "qwen-plus":   "$0.40/$1.20",   # 通义千问Plus
         "qwen-max":    "$1.20/$4.80",    # 通义千问Max
@@ -46,7 +46,7 @@ class ModelRouter:
         "minimax-m3":  "$0.50/$2.00",    # MiniMax-M3
     }
 
-    # Qoder Intl 可用模型 (通过 openapi.qoder.sh)
+# Qoder 已禁用 (2026-08-09 创始人裁定)
     QODER_INTL_MODELS = {
         "qwen-plus":   "$0.40/$1.20",
         "qwen-max":    "$1.20/$4.80",
@@ -54,38 +54,67 @@ class ModelRouter:
         "kimi-code":   "$0.50/$2.00",
     }
 
+    # === 路由决策权重（创始人铁律 2026-08-04）===
+    # 安全 > 效率 > 成本
+    # - 安全(depth)：模型能力层级匹配任务复杂度，错配=幻觉风险
+    # - 效率(speed)：credit消费模型优先（但不牺牲安全层级）
+    # - 成本(cost)：同安全+效率层内，低成本优先
+    #
+    # 池内从左到右=优先级递减
+    # ultra_light 层（心跳/问候/状态检查）：安全管理效率主导，低成本优先
+    # light 层：同等安全层级 → credit(NovaRouteAI) > self(DeepSeek)
+    # medium 层：安全第一 → DeepSeek v4-pro > credit降级
+    # heavy/reasoning：仅 DeepSeek v4-pro — 安全无替代
+    # code 层：DeepSeek flash（代码幻觉敏感，高可靠性优先）
+    # credit_mode="avoid"时自动滤除所有credit=true的模型
     MODEL_POOL = {
-        # ultra_light: 优先Qoder CN credit消费(免费)，降级DeepSeek
+        # === 路由决策表 v2.1 (2026-08-09 Tristan 修复·400根因) ===
+        # 修复背景: Momo Hermes 对话框 HTTP 400。根因 = MODEL_POOL 首选大量为
+        #   provider=qwen/novarouteai 的模型(qwen3.7-flash/qwen3.7-plus/kimi-k2.7-code)，
+        #   但 Hermes 运行时仅注册 deepseek provider(api.deepseek.com/v1)。
+        #   经 route_for_hermes 路由命中这些层级 → 模型名打到 deepseek endpoint → HTTP 400。
+        #   实测: qwen3.7-flash/qwen3.7-plus/kimi-k2.7-code 全 400；deepseek 仅认
+        #   deepseek-v4-pro / deepseek-v4-flash / deepseek-reasoner。
+        # 修复: 所有 tier 首选/降级链统一为 deepseek 可用模型 + deepseek provider。
+        #   轻量→flash(省) · 分析/代码/重推理→pro(稳) · 全部 deepseek 直连可用。
+
+        # ultra_light: 心跳/问候/状态检查 → 最低成本·最快响应
         "ultra_light": [
-            {"model": "qwen-flash", "provider": "qoder-cn", "credit": True,  "cost": "$0.14/$0.28"},
             {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
         ],
-        # light: Qoder CN qwen-plus(credit) → DeepSeek flash
+        # light: 日常问答/总结/翻译 → flash
         "light": [
-            {"model": "qwen-plus", "provider": "qoder-cn", "credit": True,  "cost": "$0.40/$1.20"},
             {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
         ],
-        # medium: DeepSeek v4-pro primary · Qoder qwen-max降级
+        # medium: 分析/推断 → pro 首选(更稳)
         "medium": [
             {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
             {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
-            {"model": "qwen-plus", "provider": "qoder-cn", "credit": True,  "cost": "$0.40/$1.20"},
         ],
-        # heavy: DeepSeek v4-pro primary, Qoder qwen-max降级
+        # heavy: 复杂推理/战略分析 → DeepSeek v4-pro 不可替代
         "heavy": [
             {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
             {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
-            {"model": "qwen-max", "provider": "qoder-cn", "credit": True,  "cost": "$1.20/$4.80"},
         ],
-        # reasoning: DeepSeek v4-pro primary（7/30升级后无reasoner模型，仅v4-pro/v4-flash）
+        # reasoning: 深度推理 → DeepSeek v4-pro 唯一（无替代）
         "reasoning": [
             {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
             {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
         ],
-        # code: Qoder CN Kimi-Code primary(credit), DeepSeek flash降级
+        # code: 代码生成 → deepseek-v4-pro 首选 (代码专项·稳)
         "code": [
-            {"model": "kimi-code", "provider": "qoder-cn", "credit": True,  "cost": "$0.50/$2.00"},
-            {"model": "qwen-plus", "provider": "qoder-cn", "credit": True,  "cost": "$0.40/$1.20"},
+            {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
+            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
+        ],
+        # cn_explain: 中文解释/说明 → flash(省)
+        "cn_explain": [
+            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
+        ],
+        # cn_creative: 中文创意/写作 → pro 首选(创作质量)
+        "cn_creative": [
+            {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
             {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
         ],
     }
@@ -122,10 +151,12 @@ class ModelRouter:
         tier = self.classifier.classify(task)
 
         # 代码生成类任务特殊处理
+        # 2026-08-08 Shuyu裁定: cn_explain/cn_creative 已由classifier识别 → 不再被code_keywords覆盖
+        # （否则"解释API接口"含API会被误判为code，违背中文说明→Qwen的成本裁定）
         code_keywords = ["代码", "编程", "测试", "函数", "类", "API", "接口",
                          "重构", "调试", "debug", "code", "function", "class",
                          "python", "javascript", "写一个", "实现"]
-        if any(kw in task.lower() for kw in code_keywords):
+        if tier not in ("cn_explain", "cn_creative") and any(kw in task.lower() for kw in code_keywords):
             tier = "code"
 
         pool = self.MODEL_POOL.get(tier, self.MODEL_POOL["medium"])
@@ -154,6 +185,7 @@ class ModelRouter:
             fallback_chain=fallbacks,
         )
 
+
     def route_with_budget(
         self,
         task: str,
@@ -174,6 +206,10 @@ class ModelRouter:
         if budget < 0.001:
             pool = self.MODEL_POOL["ultra_light"]
             primary = pool[0]
+
+            if primary.get("model", "") not in ("deepseek-v4-pro", "deepseek-v4-flash", "deepseek-reasoner"):
+                primary["model"] = "deepseek-v4-flash"
+
             return RouteSelection(
                 task=task,
                 model=primary["model"],
@@ -188,6 +224,10 @@ class ModelRouter:
         if budget < 0.01:
             pool = self.MODEL_POOL["light"]
             primary = pool[0]
+
+            if primary.get("model", "") not in ("deepseek-v4-pro", "deepseek-v4-flash", "deepseek-reasoner"):
+                primary["model"] = "deepseek-v4-flash"
+
             return RouteSelection(
                 task=task,
                 model=primary["model"],

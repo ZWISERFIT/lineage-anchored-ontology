@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lineage-anchored-ontology"
-version = "0.1.0-alpha"
-description = "AI Ontology Infrastructure: Experience Compounding Engine — six deterministic libraries operating outside the LLM's reasoning space"
+version = "0.2.0-beta"
+description = "LAO Agent Reliability Plugin — One-click install. 5 minutes to the first verified Trust Event. Four engines: Reliability Dashboard, Experience Atom, Preference Firewall, Model Router."
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.9"

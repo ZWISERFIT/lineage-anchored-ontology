@@ -56,6 +56,39 @@ print(anchor.get("founder_first_store_location"))  # "东莞市万江街道"
 
 ---
 
+## 🚀 5分钟安装（P0 · One-click）
+
+LAO 现在带一个命令行工具，从安装到第一个**可外部验证的 Trust Event** 不到 1 分钟：
+
+```bash
+pip install lineage-anchored-ontology
+lao init                      # 初始化运行环境 + 首个 verified Trust Event
+lao trust-event               # 记录一个 Trust Event（成功/失败）
+lao verify                    # 重算 SHA-256 VerifyPing 证明
+lao status                    # 查看 Trust Events / Anchors 计数
+lao atom                      # Experience Atom：Trust Event→Atom→Anchor→Future Protection
+lao firewall --request "优化token成本"   # Preference Firewall：效率允许/价值身份禁止
+```
+
+### 四大引擎（LAO v0.2.0-beta）
+
+| 引擎 | 能力 | North Star 支撑 |
+|:--|:--|:--|
+| **① One-click** | `lao init` → <1min 到首个 External Verified Trust Event | External Verified Trust Events 计数 |
+| **② Reliability Dashboard** | Agent 四维打分（Memory/Compliance/Cost/Recovery）+ 自包含 HTML | 用户看见改进 |
+| **③ Experience Atom** | Trust Event→Atom→Anchor→Future Protection | 犯一次=experience，同 pattern 再犯=永久免疫 |
+| **④ Preference Firewall** | 效率优化允许 / 价值·身份·表达改变禁止（Optimization≠Replacement） | Block→TrustEvent 自动记录 |
+
+```python
+# 四维可靠性打分（接 per-agent token 成本）
+from effect_anchored import ReliabilityScorer
+scorer = ReliabilityScorer()
+scorer.load_cost("2026-08-per-agent-breakdown.json")
+report = scorer.score("Tristan")
+```
+
+---
+
 ## 六函数一览
 
 | 函数 | 职能 | 一句话 |

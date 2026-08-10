@@ -1,9 +1,12 @@
 """
-ModelRouter — 模型路由与降级链路 v2.0
+ModelRouter — 模型路由与降级链路 v2.1
 ====================================
 
-根据任务分类结果选择最优模型，并构建降级链路。
-# v2.0: Qoder CN/Intl已禁用 (2026-08-09 创始人裁定) + Credit-aware路由
+根据任务分类结果选择最优模型，并构建跨 provider 降级链路。
+# v2.1 (2026-08-10 Tristan P0-①): 三 provider 统一故障转移
+#   - 移除 Qoder（2026-08-09 创始人裁定）
+#   - 接入 deepseek / token-plan / novarouteai 三 provider
+#   - 全部支持 deepseek-v4-pro/flash，互为主备，杜绝 400 模型-端点不匹配
 """
 
 from dataclasses import dataclass
@@ -15,7 +18,7 @@ class RouteSelection:
 
     task: str
     model: str
-    provider: str  # "deepseek" | "qwen-dashscope" | "novarouteai"
+    provider: str  # "deepseek" | "token-plan" | "novarouteai"
     tier: str
     cost: str  # "$/M tokens"
     credit_based: bool  # True = 用套餐Credit，不走DeepSeek余额
@@ -29,30 +32,10 @@ class ModelRouter:
     主模型为 pool[0]，其余为降级链路。
 
     路由策略：
-    - 代码生成/ultra_light → Qoder CN (Kimi-K2.7-Code/Qwen-Flash) → credit消费
-    - 轻量任务/light → Qoder CN (qwen-plus) → credit消费
-    - 中等/medium → DeepSeek v4 primary, Qoder为降级
-    - 重推理/heavy → DeepSeek v4-pro primary, Qoder为降级
-    - 深度推理/reasoning → DeepSeek reasoner, 无降级(Qoder无等价物)
+    - 三 provider 故障转移（deepseek / token-plan / novarouteai）
+    - 首选 deepseek-v4-pro（最稳），降级链跨 provider 用同型号（三 provider 均 200）
+    - 每个 tier 保证降级链内每一环都在该 provider 端点真实可用（防 400）
     """
-
-# Qoder 已禁用 (2026-08-09 创始人裁定)
-    QODER_CN_MODELS = {
-        "qwen-plus":   "$0.40/$1.20",   # 通义千问Plus
-        "qwen-max":    "$1.20/$4.80",    # 通义千问Max
-        "qwen-flash":  "$0.14/$0.28",    # 通义千问Flash
-        "kimi-code":   "$0.50/$2.00",    # Kimi-K2.7-Code
-        "glm-5":       "$0.60/$2.40",    # GLM-5.2
-        "minimax-m3":  "$0.50/$2.00",    # MiniMax-M3
-    }
-
-# Qoder 已禁用 (2026-08-09 创始人裁定)
-    QODER_INTL_MODELS = {
-        "qwen-plus":   "$0.40/$1.20",
-        "qwen-max":    "$1.20/$4.80",
-        "kimi-k3":     "$0.60/$2.50",
-        "kimi-code":   "$0.50/$2.00",
-    }
 
     # === 路由决策权重（创始人铁律 2026-08-04）===
     # 安全 > 效率 > 成本
@@ -61,11 +44,11 @@ class ModelRouter:
     # - 成本(cost)：同安全+效率层内，低成本优先
     #
     # 池内从左到右=优先级递减
-    # ultra_light 层（心跳/问候/状态检查）：安全管理效率主导，低成本优先
-    # light 层：同等安全层级 → credit(NovaRouteAI) > self(DeepSeek)
-    # medium 层：安全第一 → DeepSeek v4-pro > credit降级
-    # heavy/reasoning：仅 DeepSeek v4-pro — 安全无替代
-    # code 层：DeepSeek flash（代码幻觉敏感，高可靠性优先）
+    # 三 provider 故障转移（2026-08-10 实测均 200）:
+    #   deepseek(api.deepseek.com):    deepseek-v4-pro/flash ✅
+    #   token-plan(aliyuncs):          deepseek-v4-pro ✅ / flash ❌403
+    #   novarouteai(novarouteai.com):  deepseek-v4-pro/flash ✅, glm-5.2 ✅
+    # 降级链用 deepseek-v4-pro（三 provider 通用），避免 flash 打 token-plan 403
     # credit_mode="avoid"时自动滤除所有credit=true的模型
     MODEL_POOL = {
         # === 路由决策表 v2.1 (2026-08-09 Tristan 修复·400根因) ===
@@ -81,41 +64,52 @@ class ModelRouter:
         # ultra_light: 心跳/问候/状态检查 → 最低成本·最快响应
         "ultra_light": [
             {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-flash", "provider": "novarouteai", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-pro", "provider": "token-plan", "credit": False, "cost": "$2.20/$8.80"},
         ],
         # light: 日常问答/总结/翻译 → flash
         "light": [
             {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-flash", "provider": "novarouteai", "credit": False, "cost": "$0.14/$0.28"},
             {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
+            {"model": "deepseek-v4-pro", "provider": "token-plan", "credit": False, "cost": "$2.20/$8.80"},
         ],
         # medium: 分析/推断 → pro 首选(更稳)
         "medium": [
             {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
+            {"model": "deepseek-v4-pro", "provider": "novarouteai", "credit": False, "cost": "$2.20/$8.80"},
+            {"model": "deepseek-v4-pro", "provider": "token-plan", "credit": False, "cost": "$2.20/$8.80"},
             {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
         ],
         # heavy: 复杂推理/战略分析 → DeepSeek v4-pro 不可替代
         "heavy": [
             {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
-            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-pro", "provider": "novarouteai", "credit": False, "cost": "$2.20/$8.80"},
+            {"model": "deepseek-v4-pro", "provider": "token-plan", "credit": False, "cost": "$2.20/$8.80"},
         ],
         # reasoning: 深度推理 → DeepSeek v4-pro 唯一（无替代）
         "reasoning": [
             {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
-            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-pro", "provider": "novarouteai", "credit": False, "cost": "$2.20/$8.80"},
+            {"model": "deepseek-v4-pro", "provider": "token-plan", "credit": False, "cost": "$2.20/$8.80"},
         ],
         # code: 代码生成 → deepseek-v4-pro 首选 (代码专项·稳)
         "code": [
             {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
-            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-pro", "provider": "novarouteai", "credit": False, "cost": "$2.20/$8.80"},
+            {"model": "deepseek-v4-pro", "provider": "token-plan", "credit": False, "cost": "$2.20/$8.80"},
         ],
         # cn_explain: 中文解释/说明 → flash(省)
         "cn_explain": [
             {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
-            {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
+            {"model": "deepseek-v4-flash", "provider": "novarouteai", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-pro", "provider": "token-plan", "credit": False, "cost": "$2.20/$8.80"},
         ],
         # cn_creative: 中文创意/写作 → pro 首选(创作质量)
         "cn_creative": [
             {"model": "deepseek-v4-pro", "provider": "deepseek", "credit": False, "cost": "$2.20/$8.80"},
-            {"model": "deepseek-v4-flash", "provider": "deepseek", "credit": False, "cost": "$0.14/$0.28"},
+            {"model": "deepseek-v4-pro", "provider": "novarouteai", "credit": False, "cost": "$2.20/$8.80"},
+            {"model": "deepseek-v4-pro", "provider": "token-plan", "credit": False, "cost": "$2.20/$8.80"},
         ],
     }
 

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lineage-anchored-ontology"
-version = "0.2.0-beta"
-description = "LAO Agent Reliability Plugin — One-click install. 5 minutes to the first verified Trust Event. Four engines: Reliability Dashboard, Experience Atom, Preference Firewall, Model Router."
+version = "0.2.1"
+description = "DEPRECATED — merged into lao-human-calibration. This package has been consolidated into the single official LAO repository. Please install: pip install lao-human-calibration (https://pypi.org/project/lao-human-calibration/)"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.9"
@@ -30,8 +30,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ZWISERFIT/lineage-anchored-ontology"
-Repository = "https://github.com/ZWISERFIT/lineage-anchored-ontology"
+Homepage = "https://github.com/ZWISERFIT/lao"
+Repository = "https://github.com/ZWISERFIT/lao"
 Discussions = "https://github.com/ZWISERFIT/ZWISERFIT/discussions"
 
 [project.optional-dependencies]
